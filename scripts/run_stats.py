@@ -1,6 +1,6 @@
-# LCR-CN 机制分析一页摘要（Section 5.4），输出 Markdown
+# 配对统计推断：bootstrap CI + 随机化检验 p + Holm 校正
 # IDE 打开本文件点运行即可，只依赖 numpy + scikit-learn，不依赖本目录其他 .py
-# 输入路径、类别名、骨干名全在下面配置区；输出写到 analysis/outputs/
+# 加 --quick 用 1000 次重采样做快速自检；输出写到 scripts/outputs/
 
 # ==================== 配置区：路径 / 名字 / 参数，改这里 ====================
 import csv
@@ -58,21 +58,21 @@ SLARD_NAME_TO_ID = {  # SLARD-31 中文名 -> id
 SPACES = {"LCR-CN": LCR_SPACE, "SLARD-31": SLARD_SPACE}  # 数据集 -> 标签空间
 NAMES = {"LCR-CN": LCR_NAMES, "SLARD-31": SLARD_NAMES}  # 数据集 -> 类别名
 
-LCR = ROOT / "conflict_superior_laws" / "output"  # LCR-CN 预测根目录
-SLARD = ROOT / "SLARD_classification" / "output"  # SLARD-31 预测根目录
-GPT = ROOT / "conflict_superior_laws(GPT-Extract)" / "output"  # GPT 抽取预测根目录
+LCR = ROOT / "outputs" / "lcr-cn"      # LCR-CN predictions
+SLARD = ROOT / "outputs" / "slard-31"  # SLARD-31 predictions
+GPT = ROOT / "outputs" / "lcr-cn-gpt"  # GPT-extract variant (not shipped in this release)
 SEARCH_DIRS = {  # (数据集, 配置) -> 搜索目录
     ("LCR-CN", "Direct"): [LCR / "baseline"],
     ("LCR-CN", "Static"): [LCR / "ablation"],
     ("LCR-CN", "Dynamic"): [LCR / "ablation"],
-    ("LCR-CN", "Full"): [LCR / "full" / "pred_classfication"],
+    ("LCR-CN", "Full"): [LCR / "full" / "pred_classification"],
     ("LCR-CN", "Extract"): [LCR / "ablation"],
     ("LCR-CN", "GPT-Static"): [GPT / "GPT-Extract + Static"],
     ("LCR-CN", "GPT-Dynamic"): [GPT / "GPT-Extract + Dynamic"],
     ("SLARD-31", "Direct"): [SLARD / "baseline"],
     ("SLARD-31", "Static"): [SLARD / "ablation"],
     ("SLARD-31", "Dynamic"): [SLARD / "ablation"],
-    ("SLARD-31", "Full"): [SLARD / "full" / "pred_classfication"],
+    ("SLARD-31", "Full"): [SLARD / "full" / "pred_classification"],
     ("SLARD-31", "Extract"): [SLARD / "ablation"],
 }
 FILE_RULES = {  # 配置 -> 文件名匹配规则
@@ -395,70 +395,61 @@ def holm(pvals):  # Holm step-down 校正
     return adj
 
 
-# ---------- 主流程：LCR-CN 机制分析一页摘要 ----------
-CONFIGS = ["Direct", "Static", "Dynamic", "Full"]  # 四种配置
-space = LCR_SPACE  # 五类标签空间
-names = LCR_NAMES  # 类别名
-mean = lambda xs: st.fmean(xs) if xs else float("nan")  # 空列表返回 nan
+# ---------- 主流程：配对检验 + Holm 校正 ----------
+import argparse
+ap = argparse.ArgumentParser()  # 可选 --dataset / --quick
+ap.add_argument("--dataset", default="all", choices=["all", "LCR-CN", "SLARD-31"])
+ap.add_argument("--quick", action="store_true")
+args = ap.parse_args()
+n_boot = 1000 if args.quick else 5000  # bootstrap 次数
+n_perm = 1000 if args.quick else 5000  # 置换次数
+datasets = ["LCR-CN", "SLARD-31"] if args.dataset == "all" else [args.dataset]
 
-agg = {}  # 配置 -> 汇总指标
-per_class_f1 = {}  # 配置 -> 逐类 F1
-for conf in CONFIGS:
-    cov, acs = [], []
-    om_share, om_rate, wi_rate = [], [], []
-    pcs = {k: [] for k in space}
-    for bb in BACKBONES:
-        pred = load_cell("LCR-CN", conf, bb)  # 读预测
-        if pred is None: continue
-        pc = per_class([v["gold"] for v in pred.values()], [v["pred"] for v in pred.values()], space)  # 逐类 F1
-        for k in space: pcs[k].append(pc[k]["f1"])
-        n = len(pred)
-        wrong = sum(1 for v in pred.values() if v["pred"] != v["gold"])  # 错判数
-        om = sum(1 for v in pred.values() if v["pred"] != v["gold"] and v["cand"] is not None and v["gold"] not in v["cand"])  # 候选遗漏误差
-        if pred and all(v["cand"] is not None for v in pred.values()):
-            cov.append(sum(1 for v in pred.values() if v["gold"] in v["cand"]) / n * 100)  # Cov
-            acs.append(st.fmean(len(v["cand"]) for v in pred.values()))  # ACS
-        om_share.append(om / wrong * 100 if wrong else 0.0)
-        om_rate.append(om / n * 100)
-        wi_rate.append((wrong - om) / n * 100)
-    agg[conf] = {"Cov": mean(cov), "ACS": mean(acs), "rho": (1 - mean(acs) / len(space)) * 100 if acs else float("nan"), "omission share": mean(om_share), "omission rate": mean(om_rate), "within rate": mean(wi_rate)}
-    per_class_f1[conf] = {k: mean(v) for k, v in pcs.items()}
+rows, skipped = [], []
+for dataset in datasets:
+    configs = ["Direct", "Static", "Dynamic", "Full"]  # 四种配置
+    grid = {c: {} for c in configs}  # 配置 -> 骨干 -> 预测
+    missing = []
+    for conf in configs:
+        for bb in BACKBONES:
+            pred = load_cell(dataset, conf, bb)  # 读预测
+            if pred is None: missing.append(f"{conf}/{bb}")
+            else: grid[conf][bb] = pred
+    if missing: print(f"[{dataset}] missing cells: {', '.join(missing)}")
+    for label, hi, lo in CONTRASTS:  # 三组预设对比
+        if not all(bb in grid[c] for c in (hi, lo) for bb in BACKBONES):
+            skipped.append(f"{dataset} | {label}")
+            continue
+        data = prepare(dataset, grid[lo], grid[hi])  # 对齐样本
+        boot = paired_bootstrap(data, n_boot)  # 95% CI
+        rand = approximate_randomization(data, n_perm)  # 原始 p
+        rows.append({"Dataset": dataset, "Contrast": label, "n_instances": len(data["ids"]), "delta": round(boot["delta"], 3), "ci_low": round(boot["ci_low"], 3), "ci_high": round(boot["ci_high"], 3), "p_raw": round(rand["p"], 6), "n_boot": n_boot, "n_perm": n_perm})
+        print(f"[{dataset}] {label:<18} d={boot['delta']:+.2f} CI [{boot['ci_low']:+.2f}, {boot['ci_high']:+.2f}] p={rand['p']:.4g}")
 
-cov_table = {}  # 配置 -> 逐类覆盖率
-for conf in ("Dynamic", "Full"):
-    rows = {k: [] for k in space}
-    for bb in BACKBONES:
-        pred = load_cell("LCR-CN", conf, bb)  # 读预测
-        if pred is None: continue
-        for k, v in per_class_coverage(pred, space).items(): rows[k].append(v["coverage"])
-    cov_table[conf] = {k: (st.fmean(v) if v else float("nan")) for k, v in rows.items()}
-
-lines = ["# LCR-CN mechanism analysis\n", "Six-backbone means on the fixed 1,404-instance test set.\n", "\n## Candidate space and error decomposition\n", "| Configuration | Cov (%) | ACS | ρ (%) | Errors: omission share (%) | omission rate (%) | within-candidate rate (%) |", "|---|---|---|---|---|---|---|"]
-for conf in CONFIGS:
-    a = agg[conf]
-    fmt = lambda x: "—" if x != x else f"{x:.2f}"
-    lines.append(f"| {conf} | {fmt(a['Cov'])} | {fmt(a['ACS'])} | {fmt(a['rho'])} | {a['omission share']:.1f} | {a['omission rate']:.2f} | {a['within rate']:.2f} |")
-lines.append("\n## Per-class F1\n")
-lines.append("| Class | n | " + " | ".join(CONFIGS) + " | Cov Dynamic (%) | Cov Full (%) |")
-lines.append("|---" * (len(CONFIGS) + 4) + "|")
-support = {k: 0 for k in space}  # 各类别测试集样本数
-p0 = load_cell("LCR-CN", "Full", BACKBONES[0])
-if p0:
-    for v in p0.values(): support[v["gold"]] += 1
-for k in space:
-    cells = [("—" if per_class_f1[c][k] != per_class_f1[c][k] else f"{per_class_f1[c][k]:.1f}") for c in CONFIGS]
-    cd = cov_table["Dynamic"].get(k, float("nan"))
-    cf = cov_table["Full"].get(k, float("nan"))
-    lines.append(f"| {names[k]} | {support[k]} | " + " | ".join(cells) + f" | {cd:.1f} | {cf:.1f} |")
-lines.append("\n*The omission / within-candidate split is only defined for configurations that have a candidate set; Direct and Static keep the full label space, so all of their errors are within-candidate by construction.*\n")
-lines.append("\n## What the numbers say\n")
-d, f = agg["Dynamic"], agg["Full"]
-lines.append(f"1. Between Dynamic and Full, candidate coverage is essentially unchanged ({d['Cov']:.2f}% vs {f['Cov']:.2f}%) and the candidate set shrinks ({d['ACS']:.2f} to {f['ACS']:.2f} labels), so the gain is not bought by retaining fewer labels.\n")
-lines.append(f"2. The omission rate stays flat ({d['omission rate']:.2f}% to {f['omission rate']:.2f}%), whereas errors committed among retained candidates fall from {d['within rate']:.2f}% to {f['within rate']:.2f}% of all instances. FGPR therefore improves discrimination inside the candidate set rather than candidate construction.\n")
-concept = per_class_f1["Full"][2]
-others = st.fmean(per_class_f1["Full"][k] for k in (0, 1, 3, 4))
-lines.append(f"3. The definition class remains the weak point: its F1 is {concept:.1f} against {others:.1f} for the remaining classes, and its candidate coverage is {cov_table['Full'][2]:.1f}% versus {st.fmean(cov_table['Full'][k] for k in (0, 1, 3, 4)):.1f}% elsewhere. The residual error is concentrated where definitional elements are least specific, not where the classifier discriminates poorly.\n")
-out = OUT_DIR / "LCR-CN_analysis_summary.md"  # 输出 Markdown
-out.write_text("\n".join(lines), encoding="utf-8")
-print("\n".join(lines))
-print("written", out)
+if not rows:
+    print("no contrast could be evaluated")
+else:
+    adjusted = holm([r["p_raw"] for r in rows])  # Holm 校正
+    for r, p in zip(rows, adjusted):
+        r["p_holm"] = round(min(1.0, p), 6)
+        r["significant_holm_05"] = "yes" if p < 0.05 else "no"
+    path = OUT_DIR / "paired_tests_holm.csv"  # 输出 CSV
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    print("written", path)
+    md = OUT_DIR / "paired_tests_holm.md"  # 输出 Markdown 表
+    lines = ["| Dataset | Contrast | Δ Macro-F1 (pp) | 95% CI | p (raw) | p (Holm) |", "|---|---|---|---|---|---|"]
+    for r in rows:
+        lines.append(f"| {r['Dataset']} | {r['Contrast']} | {r['delta']:+.2f} | [{r['ci_low']:+.2f}, {r['ci_high']:+.2f}] | {r['p_raw']:.4g} | {r['p_holm']:.4g} |")
+    lines.append("")
+    lines.append(f"Holm correction across {len(rows)} pre-specified task-by-contrast tests; bootstrap {n_boot}, permutations {n_perm}, seed {SEED}.")
+    md.write_text("\n".join(lines), encoding="utf-8")
+    print("written", md)
+    print(f"Holm family size: {len(rows)}")
+    for r in rows:
+        print(f"  {r['Dataset']:<9} {r['Contrast']:<18} p_raw={r['p_raw']:.4g} p_holm={r['p_holm']:.4g} -> {r['significant_holm_05']}")
+    if skipped:
+        print("skipped contrasts:")
+        for s in skipped: print("  " + s)

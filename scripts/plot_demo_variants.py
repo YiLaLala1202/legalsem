@@ -1,6 +1,6 @@
 """DEMO ONLY — visual variants for review.
 
-Writes exclusively to ``analysis/figures/demo/``.
+Writes exclusively to ``scripts/figures/demo/``.
 It NEVER overwrites the official figures or the official plotting scripts.
 
 Variants produced

@@ -10,12 +10,12 @@ Element extraction on the held-out LCR-CN split, local vLLM backend::
 Dynamic classification using the extracted elements, hosted API backend::
 
     python run.py classify --dataset lcr-cn --backbone gpt-5.4 \\
-        --elements outputs/qwen3-8b_test_extract.jsonl --mode dynamic
+        --elements outputs/lcr-cn/full/elements/qwen3-8b_test_extract.jsonl --mode dynamic
 
 Static ablation (full label space, no element-driven reduction)::
 
     python run.py classify --dataset lcr-cn --backbone gpt-5.4 \\
-        --elements outputs/qwen3-8b_test_extract.jsonl --mode static
+        --elements outputs/lcr-cn/full/elements/qwen3-8b_test_extract.jsonl --mode static
 
 End-to-end baseline without element extraction::
 
@@ -32,11 +32,17 @@ from typing import Any, Dict, List
 
 import yaml
 
-from lsem import io, prompts, tasks, topics
-from lsem.backends import BackendError, SamplingConfig, build_backend
-from lsem.runner import run_batch
-
 ROOT = os.path.dirname(os.path.abspath(__file__))
+
+# Work from a source checkout without installing: the package lives in src/.
+_SRC = os.path.join(ROOT, "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
+
+from legalsem import io, prompts, tasks, topics
+from legalsem.backends import BackendError, SamplingConfig, build_backend
+from legalsem.runner import run_batch
+
 DEFAULT_CONFIG = os.path.join(ROOT, "configs", "backbones.yaml")
 DEFAULT_DATA_ROOT = os.path.join(ROOT, "data")
 DEFAULT_BUNDLES = {
@@ -74,16 +80,15 @@ def read_dataset(path: str) -> List[Dict[str, Any]]:
     return payload
 
 
-DATASET_DIRS = {"lcr-cn": "conflict_superior_laws", "slard-31": "SLARD_classification"}
 
 
 def default_output(task: str, args: argparse.Namespace) -> str:
-    """Mirror the on-disk layout the analysis scripts expect.
+    """Return the canonical output path for a task.
 
-    Keeping these paths stable is what lets ``analysis/`` glob the prediction
-    files without configuration.
+    Layout: ``outputs/<dataset>/<stage>/<backbone>_<split>_<kind>.jsonl``.
+    The analysis scripts in ``scripts/`` glob these paths directly.
     """
-    base = os.path.join(ROOT, DATASET_DIRS[args.dataset], "output")
+    base = os.path.join(ROOT, "outputs", args.dataset)
     name = args.backbone
     split = args.split
 
@@ -93,7 +98,7 @@ def default_output(task: str, args: argparse.Namespace) -> str:
     if task == "classify":
         if args.mode == "static":
             return os.path.join(base, "ablation", f"{name}_{split}_class_no_dynamic.jsonl")
-        return os.path.join(base, "full", "pred_classfication", f"{name}_{split}_class.jsonl")
+        return os.path.join(base, "full", "pred_classification", f"{name}_{split}_class.jsonl")
 
     return os.path.join(base, "baseline", f"{name}_{split}_baseline_output.jsonl")
 

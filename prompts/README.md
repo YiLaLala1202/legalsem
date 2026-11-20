@@ -11,7 +11,7 @@ It defines:
 | `classification_system_prompt` | system message for conflict classification |
 | `classification_prompt` | template with candidate and element slots |
 
-Placeholders are filled by `lsem.prompts`:
+Placeholders are filled by `legalsem.prompts`:
 
 | placeholder | filled with |
 | --- | --- |
@@ -35,5 +35,5 @@ bundle with the same schema and point `--prompt-bundle` at it.
 Any JSON file with the four required keys above works. Validate it with:
 
 ```bash
-python -c "from lsem.prompts import load_bundle; print(load_bundle('prompts/base_prompts.json')['candidate_id'])"
+PYTHONPATH=src python -c "from legalsem.prompts import load_bundle; print(load_bundle('prompts/base_prompts.json')['candidate_id'])"
 ```

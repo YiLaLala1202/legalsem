@@ -9,7 +9,7 @@ shared index vector for all six backbones within a resample (paired over
 backbones), Macro-F1 recomputed over the fixed label space of each task. This
 matches the inferential protocol described in Section 4.7 of the manuscript.
 
-Outputs: analysis/outputs/stage_ci_real.csv
+Outputs: scripts/outputs/stage_ci_real.csv
 """
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ def macro_f1_fast(y: np.ndarray, p: np.ndarray, k: int) -> float:
 # 1. Build the gold reference and the 31-class name -> id map
 # --------------------------------------------------------------------------- #
 LCR_GOLD: dict[str, int] = {}
-for path in glob.glob(str(ROOT / "conflict_superior_laws/output/full/pred_classfication/*_test_class.jsonl")):
+for path in glob.glob(str(ROOT / "outputs/lcr-cn/full/pred_classification/*_test_class.jsonl")):
     if "_v2" in path:
         continue
     for r in rows(path):
@@ -95,7 +95,7 @@ for path in glob.glob(str(ROOT / "conflict_superior_laws/output/full/pred_classf
 
 SLARD_GOLD: dict[str, int] = {}
 NAME2ID: dict[str, int] = {}
-for path in glob.glob(str(ROOT / "SLARD_classification/output/baseline/*_baseline_output.jsonl")):
+for path in glob.glob(str(ROOT / "outputs/slard-31/baseline/*_baseline_output.jsonl")):
     for r in rows(path):
         rid = str(r["id"]).strip()
         SLARD_GOLD.setdefault(rid, int(r["gold_label"]))
@@ -106,17 +106,17 @@ for path in glob.glob(str(ROOT / "SLARD_classification/output/baseline/*_baselin
 # --------------------------------------------------------------------------- #
 PATTERNS = {
     "LCR-CN": {
-        "Direct": "conflict_superior_laws/output/baseline/*_baseline_output.jsonl",
-        "Static": "conflict_superior_laws/output/ablation/*/*_test_class_no_dynamic.jsonl",
-        "Dynamic": "conflict_superior_laws/output/ablation/*/*_test_class*dynamic*.jsonl",
-        "Dynamic2": "conflict_superior_laws/output/ablation/*/*_test_class.jsonl",
-        "Full": "conflict_superior_laws/output/full/pred_classfication/*_test_class.jsonl",
+        "Direct": "outputs/lcr-cn/baseline/*_baseline_output.jsonl",
+        "Static": "outputs/lcr-cn/ablation/*/*_test_class_no_dynamic.jsonl",
+        "Dynamic": "outputs/lcr-cn/ablation/*/*_test_class*dynamic*.jsonl",
+        "Dynamic2": "outputs/lcr-cn/ablation/*/*_test_class.jsonl",
+        "Full": "outputs/lcr-cn/full/pred_classification/*_test_class.jsonl",
     },
     "SLARD-31": {
-        "Direct": "SLARD_classification/output/baseline/*_baseline_output.jsonl",
-        "Static": "SLARD_classification/output/ablation/*/*_test_class_no_dynamic.jsonl",
-        "Dynamic": "SLARD_classification/output/ablation/*/*_test_class*dynamic*.jsonl",
-        "Full": "SLARD_classification/output/full/pred_classfication/*_test_class.jsonl",
+        "Direct": "outputs/slard-31/baseline/*_baseline_output.jsonl",
+        "Static": "outputs/slard-31/ablation/*/*_test_class_no_dynamic.jsonl",
+        "Dynamic": "outputs/slard-31/ablation/*/*_test_class*dynamic*.jsonl",
+        "Full": "outputs/slard-31/full/pred_classification/*_test_class.jsonl",
     },
 }
 

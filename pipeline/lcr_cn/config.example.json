@@ -8,8 +8,8 @@
     "3": "处罚幅度或范围不符",
     "4": "增设或变更适用条件"
   },
-  "feedback_data": "../dataset/train.jsonl",
-  "validation_data": "../dataset/val.jsonl",
+  "feedback_data": "../../data/lcr-cn/train.jsonl",
+  "validation_data": "../../data/lcr-cn/val.jsonl",
   "initial_prompt_bundle": "base_prompts.json",
   "work_dir": "runs/qwen2.5-7b",
   "optimizer": {

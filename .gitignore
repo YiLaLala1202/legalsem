@@ -6,8 +6,6 @@ data/slard-31/*.json
 
 # --- run outputs ---
 outputs/
-conflict_superior_laws/output/**/*.jsonl
-SLARD_classification/output/**/*.jsonl
 runs/
 *.log
 

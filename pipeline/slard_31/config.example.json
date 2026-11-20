@@ -1,8 +1,8 @@
 {
   "experiment_name": "SLARD-31_FGPR_Qwen2.5-7B",
   "target_model_name": "Qwen2.5-7B-Instruct",
-  "feedback_data": "../dataset/feedback.json",
-  "validation_data": "../dataset/val.json",
+  "feedback_data": "../../data/slard-31/feedback.json",
+  "validation_data": "../../data/slard-31/val.json",
   "initial_prompt_bundle": "base_prompts.json",
   "work_dir": "runs/qwen2.5-7b",
   "optimizer": {

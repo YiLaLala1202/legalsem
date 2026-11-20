@@ -81,7 +81,7 @@ python3 run_fgpr.py optimize --config config.qwen2.5-7b.json
 python3 run_fgpr.py test \
   --config config.qwen2.5-7b.json \
   --frozen-prompt runs/qwen2.5-7b/frozen_prompt.json \
-  --test-data ../dataset/test.jsonl \
+  --test-data ../../data/lcr-cn/test.jsonl \
   --output runs/qwen2.5-7b/test_predictions.jsonl \
   --metrics runs/qwen2.5-7b/test_metrics.json
 ```

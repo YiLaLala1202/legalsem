@@ -6,4 +6,4 @@
 
 原始字段：`id`、`title`、`clause_content`、`regulation`、`category`。
 
-如需从原始 6555 条重新划分，在 `../3.feedback_refinement/` 中运行 `prepare_dev_split.py`（输入为原始开发数据，输出 feedback/val）。不要从 test 中切验证集。
+如需从原始 6555 条重新划分，在 `pipeline/slard_31/` 中运行 `prepare_dev_split.py`（输入为原始开发数据，输出 feedback/val）。不要从 test 中切验证集。

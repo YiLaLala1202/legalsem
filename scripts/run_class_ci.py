@@ -9,8 +9,8 @@ from collections import defaultdict
 from pathlib import Path
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent / "conflict_superior_laws" / "output"
-FULL = sorted(glob.glob(str(ROOT / "full/pred_classfication/*_test_class.jsonl")))
+ROOT = Path(__file__).resolve().parent.parent / "outputs" / "lcr-cn"
+FULL = sorted(glob.glob(str(ROOT / "full/pred_classification/*_test_class.jsonl")))
 BASE = sorted(glob.glob(str(ROOT / "baseline/*_baseline_output.jsonl")))
 NAMES = {0:"No conflict",1:"Authority/responsibility",2:"Concept/definition scope",
          3:"Sanction magnitude/range",4:"Applicability condition"}

@@ -19,7 +19,7 @@ data/
 
 ## Field reference
 
-LCR-CN (`conflict_superior_laws`):
+LCR-CN (`data/lcr-cn/`):
 
 | field | role |
 | --- | --- |
@@ -29,7 +29,7 @@ LCR-CN (`conflict_superior_laws`):
 | `conflict_type` | gold class name — **scoring only, never in the prompt** |
 | `conflict_description`, `distractors` | annotation rationale and negative examples — **never in the prompt** |
 
-SLARD-31 (`SLARD_classification`):
+SLARD-31 (`data/slard-31/`):
 
 | field | role |
 | --- | --- |
@@ -48,7 +48,7 @@ SLARD-31 (`SLARD_classification`):
 
 ## Obtaining the full data
 
-`SLARD_classification/dataset/README.md` documents how the development split was
-derived from the publicly released SLARD data, including the
-`prepare_dev_split.py` reproduction path. LCR-CN is distributed separately by the
+`data/slard-31/README.md` documents how the development split was derived from
+the publicly released SLARD data, including the `prepare_dev_split.py`
+reproduction path in `pipeline/slard_31/`. LCR-CN is distributed separately by the
 authors under its own terms; see that README for the contact and license notes.

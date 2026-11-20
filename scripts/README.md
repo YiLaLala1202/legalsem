@@ -15,8 +15,8 @@ python run.py classify --dataset lcr-cn --backbone qwen3-8b \
     --elements outputs/lcr-cn_qwen3-8b_extract.jsonl --mode dynamic
 ```
 
-Scripts read from `conflict_superior_laws/output/` and
-`SLARD_classification/output/`, resolved relative to this package, so the
+Scripts read from `outputs/lcr-cn/` and
+`outputs/slard-31/`, resolved relative to this package, so the
 repository can live anywhere on disk.
 
 ## Scripts
@@ -39,15 +39,15 @@ All scripts are self-contained: they import only the standard library,
 `numpy`, and `matplotlib`. Run them directly or as a module:
 
 ```bash
-python analysis/run_stats.py --quick          # 1000 resamples, ~30 s
-python analysis/run_stats.py --dataset LCR-CN
-python analysis/run_candidate_space.py
-python analysis/run_class_effects.py --dataset SLARD-31
+python scripts/run_stats.py --quick          # 1000 resamples, ~30 s
+python scripts/run_stats.py --dataset LCR-CN
+python scripts/run_candidate_space.py
+python scripts/run_class_effects.py --dataset SLARD-31
 python -m analysis.plot_class_effect_slard    # from the repository root
 ```
 
-Outputs go to `analysis/outputs/` (CSV, LaTeX fragments, Markdown) and
-`analysis/figures/` (PDF + PNG). Both directories are created on demand and are
+Outputs go to `scripts/outputs/` (CSV, LaTeX fragments, Markdown) and
+`scripts/figures/` (PDF + PNG). Both directories are created on demand and are
 excluded from version control.
 
 ## Candidate reconstruction

@@ -24,9 +24,9 @@ SLARD 当前只有 `train.json` 和 `test.json`。不能使用 test 选择 Promp
 
 ```bash
 python3 prepare_dev_split.py \
-  --input ../dataset/train.json \
-  --feedback-output ../dataset/feedback.json \
-  --validation-output ../dataset/val.json \
+  --input ../../data/slard-31/train.json \
+  --feedback-output ../../data/slard-31/feedback.json \
+  --validation-output ../../data/slard-31/val.json \
   --validation-ratio 0.15 \
   --seed 2026
 ```
@@ -67,7 +67,7 @@ python3 run_fgpr.py optimize --config config.qwen2.5-7b.json
 python3 run_fgpr.py test \
   --config config.qwen2.5-7b.json \
   --frozen-prompt runs/qwen2.5-7b/frozen_prompt.json \
-  --test-data ../dataset/test.json \
+  --test-data ../../data/slard-31/test.json \
   --output runs/qwen2.5-7b/test_predictions.jsonl \
   --metrics runs/qwen2.5-7b/test_metrics.json
 ```

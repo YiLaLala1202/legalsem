@@ -2,7 +2,7 @@
 
 Each function returns a per-case processor compatible with
 :func:`lsem.runner.run_batch`. Output rows keep the field names used by the
-analysis scripts in ``analysis/`` so that evaluation code does not need to
+analysis scripts in ``scripts/`` so that evaluation code does not need to
 change.
 """
 
