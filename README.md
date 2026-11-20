@@ -1,20 +1,42 @@
+<div align="center">
+
 # legalsem
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.9%2B-lightgrey)
+**Knowledge-Guided Dynamic Legal Text Classification<br/>through Semantic Element Modeling**
 
-**Knowledge-Guided Dynamic Legal Text Classification through Semantic Element Modeling**
+[![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776ab.svg)
+![Backbones](https://img.shields.io/badge/backbones-6-6f42c1.svg)
+![Tasks](https://img.shields.io/badge/tasks-LCR--CN%20%7C%20SLARD--31-d97706.svg)
 
-Reference implementation for the paper's inference-time knowledge control layer.
-Structured legal knowledge is used as an explicit, inspectable decision surface —
-not as passive context. The class set offered to the model is narrowed by a fixed
-semantic-element-to-label mapping, and the prompt itself is optimised during
-development (FGPR) then frozen for testing.
+Reference implementation of an **inference-time knowledge-control layer** for legal text
+classification. Structured legal knowledge is used as an explicit, inspectable decision
+surface — not as passive context.
 
-The release name `legalsem` stands for legal **sem**antic element modeling and is
-shared with the library package `lsem/`.
+</div>
 
-## Method in one page
+<img src="docs/figures/method_overview.png" alt="Figure 1: semantic element extraction, dynamic candidate-constrained classification, and development-only feedback-guided prompt refinement" width="100%">
+
+<p align="center"><sub><b>Figure 1.</b> Overview. <b>(a)</b> Six legal semantic elements are
+extracted from the subordinate provision, using the superior provision as context. <b>(b)</b>
+The structured evidence passes through a fixed, a priori label mapping into a candidate set;
+the target backbone then classifies within that set only. <b>(c)</b> FGPR runs at development
+time only: staged errors are routed and aggregated, a fixed optimizer LLM proposes prompt
+bundles, the validation set selects one by Macro-F1, and the winning bundle is frozen before
+test.</sub></p>
+
+## Contents
+
+[Method](#method) · [Results](#results) · [Quick start](#quick-start) ·
+[Repository layout](#repository-layout) · [Experiment matrix](#experiment-matrix) ·
+[Datasets](#datasets) · [Prompt versions](#prompt-versions) ·
+[Configuration](#configuration) · [Analysis](#analysis) · [Citation](#citation)
+
+---
+
+## Method
+
+Three stages, each a separate call in the pipeline:
 
 ```text
 clause + superior laws
@@ -41,31 +63,26 @@ Class `0` (no conflict) is always admissible. The mapping is deliberate and
 static: it is the audit surface the paper argues for, and it is never fitted on
 training labels.
 
-## Repository layout
+The release name `legalsem` stands for legal **sem**antic element modeling and is
+shared with the library package `lsem/`.
 
-```text
-run.py                     unified entry point for all stages
-lsem/                      shared library
-  backends.py              remote OpenAI-compatible API / local vLLM
-  labels.py                conflict label space + candidate reduction
-  topics.py                SLARD-31 topic task (evidence extraction + reduction)
-  prompts.py               prompt-bundle loading and placeholder filling
-  parsing.py               tolerant JSON / label extraction
-  runner.py                resumable batch loop
-  tasks.py                 extraction, classification, baseline stages
-configs/backbones.yaml     one entry per backbone
-prompts/                   prompt bundles (see prompts/README.md)
-data/                      dataset placement + 20-case format samples
-analysis/                  paired bootstrap CI and figure scripts
-conflict_superior_laws/    LCR-CN: dataset notes, FGPR pipeline
-SLARD_classification/      SLARD-31: dataset notes, FGPR pipeline
-Model_download.py          checkpoint downloader
-```
+## Results
 
-The six backbones used in the paper (Qwen2.5-7B, Qwen3-8B,
-DeepSeek-R1-0528-Qwen3-8B, Claude Sonnet, GPT-5.4, LegalOne-8B) differ only in
-`configs/backbones.yaml`; the experiment logic is shared, so a comparison across
-backbones isolates the model rather than the harness.
+<p align="center">
+  <img src="docs/figures/stage_wise_macro_f1.svg" alt="Stage-wise mean Macro-F1 across the four ablations" width="46%">
+  <img src="docs/figures/class_effect_delta.svg" alt="Per-class effect across the six backbones" width="51%">
+</p>
+
+<p align="center"><sub><b>Left:</b> stage-wise mean Macro-F1 for Direct → Extract+Static →
+Extract+Dynamic → Full, with 95% paired-bootstrap intervals.
+<b>Right:</b> per-class effect size across all six backbones.</sub></p>
+
+Each stage contributes: element extraction alone helps modestly, restricting the candidate
+set is the largest single gain, and the frozen FGPR prompt bundle adds a further step. The
+direction is consistent across all six backbones, which is the point of the paper's design —
+the control layer sits outside the model, so it does not depend on which model is plugged in.
+
+These figures are regenerated from stored predictions by the scripts in `analysis/`.
 
 ## Quick start
 
@@ -113,6 +130,33 @@ Add `--dry-run` to resolve inputs and print the plan without calling a model.
 Add `--limit 20` for a smoke test. Runs are resumable: an interrupted job
 continues from the last successful case.
 
+## Repository layout
+
+```text
+run.py                     unified entry point for all stages
+lsem/                      shared library
+  backends.py              remote OpenAI-compatible API / local vLLM
+  labels.py                conflict label space + candidate reduction
+  topics.py                SLARD-31 topic task (evidence extraction + reduction)
+  prompts.py               prompt-bundle loading and placeholder filling
+  parsing.py               tolerant JSON / label extraction
+  runner.py                resumable batch loop
+  tasks.py                 extraction, classification, baseline stages
+configs/backbones.yaml     one entry per backbone
+prompts/                   prompt bundles (see prompts/README.md)
+data/                      dataset placement + 20-case format samples
+docs/figures/              figures used in this README
+analysis/                  paired bootstrap CI and figure scripts
+conflict_superior_laws/    LCR-CN: dataset notes, FGPR pipeline
+SLARD_classification/      SLARD-31: dataset notes, FGPR pipeline
+Model_download.py          checkpoint downloader
+```
+
+The six backbones used in the paper (Qwen2.5-7B, Qwen3-8B,
+DeepSeek-R1-0528-Qwen3-8B, Claude Sonnet, GPT-5.4, LegalOne-8B) differ only in
+`configs/backbones.yaml`; the experiment logic is shared, so a comparison across
+backbones isolates the model rather than the harness.
+
 ## Experiment matrix
 
 | Setting | Element extraction | Dynamic candidates | FGPR |
@@ -126,7 +170,7 @@ continues from the last successful case.
 FGPR itself lives in the two `3.*` directories and is run separately — see
 `conflict_superior_laws/3.verification/README.md`.
 
-## Data
+## Datasets
 
 The datasets are **not** redistributed here. `data/lcr-cn/sample.jsonl` and
 `data/slard-31/sample.json` contain 20 cases each, purely to document the field
@@ -200,3 +244,8 @@ existing prediction paths and analysis scripts keep resolving.
   year    = {2026}
 }
 ```
+
+## License
+
+Released under the [MIT License](LICENSE). The datasets are not covered by this
+license and remain under their own terms.
