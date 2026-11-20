@@ -1,0 +1,57 @@
+{
+  "experiment_name": "LCR-CN_FGPR_Qwen2.5-7B",
+  "target_model_name": "Qwen2.5-7B-Instruct",
+  "labels": {
+    "0": "无冲突",
+    "1": "职权或责任划分不符",
+    "2": "概念或定义范围不符",
+    "3": "处罚幅度或范围不符",
+    "4": "增设或变更适用条件"
+  },
+  "feedback_data": "../dataset/train.jsonl",
+  "validation_data": "../dataset/val.jsonl",
+  "initial_prompt_bundle": "base_prompts.json",
+  "work_dir": "runs/qwen2.5-7b",
+  "optimizer": {
+    "model": "Qwen/Qwen3.5-122B-A10B",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "api_key_env": "SILICONFLOW_API_KEY",
+    "candidate_count": 3,
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "max_tokens": 12000,
+    "max_retries": 5,
+    "timeout_seconds": 180,
+    "seed": 2026
+  },
+  "target_runner": {
+    "cwd": ".",
+    "command": [
+      "python3",
+      "run_target_openai.py",
+      "--input",
+      "{input}",
+      "--prompt-bundle",
+      "{prompt_bundle}",
+      "--output",
+      "{output}",
+      "--model",
+      "Qwen2.5-7B-Instruct",
+      "--base-url",
+      "http://127.0.0.1:8000/v1",
+      "--api-key-env",
+      "VLLM_API_KEY",
+      "--temperature",
+      "0.0",
+      "--top-p",
+      "0.1"
+    ]
+  },
+  "selection": {
+    "metric": "macro_f1",
+    "min_delta": 0.0,
+    "max_rounds": 3,
+    "patience": 2,
+    "representatives_per_cluster": 3
+  }
+}

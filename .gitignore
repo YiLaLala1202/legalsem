@@ -1,0 +1,35 @@
+# --- datasets (not redistributed) ---
+data/lcr-cn/*.jsonl
+data/slard-31/*.json
+!data/lcr-cn/sample.jsonl
+!data/slard-31/sample.json
+
+# --- run outputs ---
+outputs/
+conflict_superior_laws/output/**/*.jsonl
+SLARD_classification/output/**/*.jsonl
+runs/
+*.log
+
+# --- credentials and local config ---
+.env
+.env.*
+config.local.*.json
+!config.example.json
+!config.*.example.json
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# --- editors and OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

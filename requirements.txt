@@ -1,0 +1,19 @@
+# Core runtime for run.py
+openai>=1.30
+PyYAML>=6.0
+tqdm>=4.65
+
+# Analysis scripts
+numpy>=1.24
+matplotlib>=3.7
+scikit-learn>=1.3
+
+# Checkpoint download
+huggingface_hub>=0.23
+
+# Optional: only for `backend: vllm` (local GPU inference)
+# vllm>=0.6
+# transformers>=4.44
+
+# Optional: only for ModelScope-hosted checkpoints
+# modelscope>=1.15
